@@ -49,6 +49,22 @@ export const routes: RouteObject[] = [
         lazy: () => import('@/pages/board').then((m) => ({ Component: m.BoardPage })),
       },
       {
+        path: 'issues',
+        lazy: () => import('@/pages/issues').then((m) => ({ Component: m.IssuesPage })),
+      },
+      {
+        path: 'activity',
+        lazy: () => import('@/pages/activity').then((m) => ({ Component: m.ActivityPage })),
+      },
+      {
+        path: 'analytics',
+        lazy: () => import('@/pages/analytics').then((m) => ({ Component: m.AnalyticsPage })),
+      },
+      {
+        path: 'settings',
+        lazy: () => import('@/pages/settings').then((m) => ({ Component: m.SettingsPage })),
+      },
+      {
         path: '*',
         lazy: () => import('@/pages/not-found').then((m) => ({ Component: m.NotFoundPage })),
       },
