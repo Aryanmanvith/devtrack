@@ -148,7 +148,7 @@ export function useSearch(q: string) {
     queryKey: qk.search(term),
     queryFn: ({ signal }) => api.search(term, signal),
     enabled: term.length >= 2,
-    placeholderData: keepPreviousData,
+    // No placeholder: results for an earlier query must never stand in for this one.
     staleTime: 10_000,
   })
 }

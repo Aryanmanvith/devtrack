@@ -43,6 +43,23 @@ export function CommandPalette({
     results && (results.projects.length || results.tasks.length || results.issues.length),
   )
 
+  // cmdk highlights the first item only when it filters the list itself. Search results come
+  // from the server instead, so keep the highlight on a current result: the one the user moved
+  // to with the arrow keys, otherwise the first. Enter then always opens what is highlighted.
+  const [picked, setPicked] = useState('')
+  const resultValues = results
+    ? [
+        ...results.projects.map((project) => `project-${project.id}`),
+        ...results.tasks.map((task) => `task-${task.id}`),
+        ...results.issues.map((issue) => `issue-${issue.id}`),
+      ]
+    : null
+  const highlighted = resultValues
+    ? resultValues.includes(picked)
+      ? picked
+      : (resultValues[0] ?? '')
+    : picked
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent hideClose className="top-[18%] max-w-xl translate-y-0 p-0">
@@ -53,6 +70,8 @@ export function CommandPalette({
           </DialogDescription>
         </VisuallyHidden.Root>
         <Command
+          value={highlighted}
+          onValueChange={setPicked}
           shouldFilter={!searching}
           label="Search DevTrack"
           className="flex max-h-[60vh] flex-col"
