@@ -46,8 +46,9 @@ running something:
 - **The running application**: the dashboard's numbers compared with the API's, screenshots
   reviewed at three screen widths in both themes, and colour contrast measured against WCAG AA.
 
-What was **not** verified: the Windows PowerShell commands (the work was done on Linux), the
-GitHub Actions workflow on GitHub itself, and use with a real screen reader or touch device.
+What was **not** verified: the Windows PowerShell commands (the work was done on Linux), and
+use with a real screen reader or touch device. The GitHub Actions workflow has since run on
+GitHub and passed; see [QA_REPORT.md](QA_REPORT.md).
 
 ## Mistakes the checks caught
 
