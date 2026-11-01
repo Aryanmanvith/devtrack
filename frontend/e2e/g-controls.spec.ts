@@ -64,10 +64,14 @@ test('app shell: create menu, theme menu, collapsed sidebar, profile, logo and s
   await page.getByRole('button', { name: 'Collapse sidebar' }).click()
   const nav = page.getByRole('navigation', { name: 'Main' })
   await expect(nav.getByText('Issues', { exact: true })).toHaveCount(0)
+  await nav.getByRole('link', { name: 'Issues' }).hover()
+  await expect(page.getByRole('tooltip', { name: 'Issues' })).toBeVisible()
   await nav.getByRole('link', { name: 'Issues' }).click()
   await expect(h1(page)).toHaveText('Issues')
   await page.reload()
   await expect(page.getByRole('button', { name: 'Expand sidebar' })).toBeVisible()
+  await page.getByRole('button', { name: 'Expand sidebar' }).hover()
+  await expect(page.getByRole('tooltip', { name: 'Expand sidebar' })).toBeVisible()
   await page.getByRole('button', { name: 'Expand sidebar' }).click()
   await expect(nav.getByText('Issues', { exact: true })).toBeVisible()
 
@@ -199,6 +203,29 @@ test('dashboard: summary links, KPIs, trend controls, distribution and panel lin
   await expect(page).toHaveURL(/\/tasks\?status=open&priority=urgent$/)
   await expect(taskList(page)).toContainText(late.title)
   await back()
+  const distributionRegion = page.getByRole('region', { name: 'Task distribution' })
+  const ring = await distributionRegion.locator('.recharts-pie').boundingBox()
+  if (!ring) throw new Error('Donut chart not measurable')
+  const radius = (ring.width / 2) * 0.85
+  const centre = { x: ring.x + ring.width / 2, y: ring.y + ring.height / 2 }
+  const sliceTip = distributionRegion
+    .locator('.recharts-tooltip-wrapper')
+    .getByText(/\d+ tasks? \(\d+%\)/)
+  await expect
+    .poll(async () => {
+      for (const [dx, dy] of [
+        [radius, 0],
+        [0, -radius],
+        [-radius, 0],
+        [0, radius],
+      ] as const) {
+        await page.mouse.move(centre.x + dx, centre.y + dy)
+        await page.waitForTimeout(150)
+        if (await sliceTip.isVisible()) return true
+      }
+      return false
+    })
+    .toBe(true)
   // A ring segment's bounding-box centre can fall in the hole, so dispatch the click on the path.
   await page
     .getByRole('region', { name: 'Task distribution' })
@@ -460,7 +487,17 @@ test('project detail: breadcrumb, board link, status links, tabs, create and row
   await page.goBack()
   await expect(h1(page)).toHaveText(project.name)
 
-  // Row controls: completion checkbox and the actions menu.
+  // Row controls: status menu, completion checkbox and the actions menu.
+  await tasks.getByRole('button', { name: `Status: To Do. Change status of ${todo.title}` }).click()
+  await page.getByRole('menuitemradio', { name: 'In Review' }).click()
+  await expectToast(page, 'Moved to In Review')
+  await expect.poll(() => taskStatus(page, todo.id)).toBe('in_review')
+  await tasks
+    .getByRole('button', { name: `Status: In Review. Change status of ${todo.title}` })
+    .click()
+  await page.getByRole('menuitemradio', { name: 'To Do' }).click()
+  await expectToast(page, 'Moved to To Do')
+  await expect.poll(() => taskStatus(page, todo.id)).toBe('todo')
   await tasks.getByRole('checkbox', { name: `Mark "${todo.title}" as done` }).click()
   await expectToast(page, 'Task completed')
   await expect.poll(() => taskStatus(page, todo.id)).toBe('done')
@@ -543,6 +580,8 @@ test('my tasks: remaining filters, row menu, drawer controls and completion togg
   // Priority sort: urgent first.
   await chooseOption(page, page.getByRole('combobox', { name: 'Sort tasks by' }), 'Sort: Priority')
   await expect(page).toHaveURL(/sort=priority/)
+  await page.getByRole('button', { name: /^Sort descending/ }).hover()
+  await expect(page.getByRole('tooltip', { name: 'Descending' })).toBeVisible()
 
   // Row menu: details, edit, delete (cancelled).
   await row.getByRole('button', { name: `More actions for ${labelled.title}` }).click()
@@ -677,6 +716,31 @@ test('kanban: project filter, card filter, column create, keyboard move and card
     .click()
   await expect(dialog.getByRole('combobox', { name: 'Project' })).toContainText(project.name)
   await dialog.getByRole('button', { name: 'Cancel' }).click()
+
+  // Reorder within a column: drag the top card below the other one.
+  const cards = todo.locator('[data-testid^="kanban-card-"]')
+  const order = async () =>
+    (await cards.allInnerTexts()).map((text) => (text.includes(first.title) ? 'first' : 'second'))
+  const before = await order()
+  const top = await cards.nth(0).boundingBox()
+  const bottom = await cards.nth(1).boundingBox()
+  if (!top || !bottom) throw new Error('Kanban cards not measurable')
+  await page.mouse.move(top.x + top.width / 2, top.y + top.height - 20)
+  await page.mouse.down()
+  await page.mouse.move(top.x + top.width / 2, top.y + top.height - 8, { steps: 4 })
+  await page.mouse.move(bottom.x + bottom.width / 2, bottom.y + bottom.height - 10, { steps: 15 })
+  await page.mouse.up()
+  await expect.poll(order).toEqual([...before].reverse())
+  const stored = async () =>
+    (
+      await apiGet<{ items: { id: number }[] }>(
+        page.request,
+        `/api/tasks?project_id=${project.id}&status=todo&sort=position`,
+      )
+    ).body.items.map((task) => (task.id === first.id ? 'first' : 'second'))
+  await expect.poll(stored).toEqual([...before].reverse())
+  await page.reload()
+  await expect.poll(order).toEqual([...before].reverse())
 
   // Escape cancels a keyboard move and leaves the card where it was.
   await page.getByRole('button', { name: `Move task ${second.title}` }).focus()
@@ -1016,6 +1080,20 @@ test('settings: week start, demo data load and removal, demo notice and API docs
   await page.getByRole('radio', { name: 'Monday' }).click()
   await expectToast(page, 'Week start saved')
 
+  const nameField = page.getByLabel('Display name')
+  const saveName = page.getByRole('button', { name: 'Save name' })
+  const original = await nameField.inputValue()
+  await expect(saveName).toBeDisabled()
+  await nameField.fill('   ')
+  await saveName.click()
+  await expect(page.getByText('Enter a name to show in the app.')).toBeVisible()
+  await page.getByRole('button', { name: 'Cancel' }).click()
+  await expect(nameField).toHaveValue(original)
+  await expect(saveName).toBeDisabled()
+  expect(
+    (await apiGet<{ display_name: string }>(page.request, '/api/preferences')).body.display_name,
+  ).toBe(original)
+
   const docs = page.getByRole('link', { name: 'Open API documentation' })
   await expect(docs).toHaveAttribute('href', 'http://127.0.0.1:8001/docs')
   expect((await page.request.get('http://127.0.0.1:8001/docs')).status()).toBe(200)
@@ -1076,6 +1154,12 @@ test('command palette results and quick actions; deadline bell items', async ({ 
   await page.keyboard.press('Escape')
 
   await page.keyboard.press('Control+k')
+  await input.fill(project.name)
+  await expect(palette.getByRole('option', { name: new RegExp(project.name) })).toBeVisible()
+  await page.keyboard.press('Enter')
+  await expect(h1(page)).toHaveText(project.name)
+
+  await page.keyboard.press('Control+k')
   await input.fill('zzzz-no-such-record')
   await expect(palette.getByText(/No projects, tasks or issues match/)).toBeVisible()
   await input.fill('')
@@ -1114,6 +1198,10 @@ test('command palette results and quick actions; deadline bell items', async ({ 
 
 test('empty states: every call to action opens the right form', async ({ page }) => {
   const project = await apiCreateProject(page.request, { name: uid('Empty states') })
+  const task = await apiCreateTask(page.request, {
+    project_id: project.id,
+    title: uid('No history yet'),
+  })
   const opens = async (button: Locator, dialog: string) => {
     await button.click()
     await expect(page.getByRole('dialog', { name: dialog })).toBeVisible()
@@ -1122,7 +1210,8 @@ test('empty states: every call to action opens the right form', async ({ page })
   }
 
   // A project without tasks or issues (real data).
-  await page.goto(`/projects/${project.id}`)
+  const bare = await apiCreateProject(page.request, { name: uid('Bare project') })
+  await page.goto(`/projects/${bare.id}`)
   const panel = page.getByRole('tabpanel')
   await expect(panel.getByText('No tasks in this project')).toBeVisible()
   await opens(panel.getByRole('button', { name: 'Create task' }), 'Create task')
@@ -1168,6 +1257,15 @@ test('empty states: every call to action opens the right form', async ({ page })
   const projects = page.getByRole('region', { name: 'Projects' })
   await expect(projects.getByText('No active projects')).toBeVisible()
   await opens(projects.getByRole('button', { name: 'Create project' }), 'Create project')
+
+  // A record whose history is empty says so instead of showing a bare heading.
+  await page.route(/\/api\/activity\?/, (route) =>
+    route.fulfill({ json: { items: [], total: 0, limit: 20, offset: 0 } }),
+  )
+  await page.goto(`/tasks?task=${task.id}`)
+  await expect(
+    page.getByRole('dialog', { name: task.title }).getByText('No changes recorded yet.'),
+  ).toBeVisible()
 })
 
 test('no-match states: Clear filters resets tasks, issues and activity', async ({ page }) => {
@@ -1182,6 +1280,26 @@ test('no-match states: Clear filters resets tasks, issues and activity', async (
     await expect(page).toHaveURL(new RegExp(`${path}$`))
     await expect(page.getByText(message)).toHaveCount(0)
   }
+})
+
+test('unexpected errors: a page that fails to load offers a reload and a way back', async ({
+  page,
+}) => {
+  const pageCode = /\/src\/pages\/analytics\.tsx/
+  const nav = page.getByRole('navigation', { name: 'Main' })
+  await page.route(pageCode, (route) => route.abort())
+  await page.goto('/')
+  await expect(h1(page)).toBeVisible()
+  await nav.getByRole('link', { name: 'Analytics' }).click()
+  await expect(page.getByRole('heading', { name: 'This page hit an error' })).toBeVisible()
+  await page.getByRole('link', { name: 'Go to overview' }).click()
+  await expect(h1(page)).toHaveText(/^(Good|Working late)/)
+
+  await nav.getByRole('link', { name: 'Analytics' }).click()
+  await expect(page.getByRole('heading', { name: 'This page hit an error' })).toBeVisible()
+  await page.unroute(pageCode)
+  await page.getByRole('button', { name: 'Reload page' }).click()
+  await expect(h1(page)).toHaveText('Analytics')
 })
 
 test('responsive: every page fits phone and tablet widths without console errors', async ({
