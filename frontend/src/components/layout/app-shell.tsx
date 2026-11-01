@@ -1,6 +1,6 @@
 import { CircleAlert, FolderPlus, ListPlus, Menu, Plus, Search } from 'lucide-react'
 import { useCallback, useState } from 'react'
-import { Link, Outlet, ScrollRestoration, useLocation, useMatch } from 'react-router'
+import { Link, Outlet, ScrollRestoration, useLocation, useMatch, type Location } from 'react-router'
 import { Toaster } from 'sonner'
 import { Logo } from '@/components/common/logo'
 import { IssueDetailSheet } from '@/components/issues/issue-detail-sheet'
@@ -23,6 +23,20 @@ import { CommandPalette } from './command-palette'
 import { DeadlineAlerts } from './deadline-alerts'
 import { pageTitle } from './nav'
 import { NavList, ProfileLink, Sidebar, ThemeMenu } from './sidebar'
+
+/**
+ * Scroll positions are remembered per page, so changing filters or opening a drawer (both only
+ * change the query string) never scrolls the page. Positions are kept for Back and Forward
+ * within a visit but not across reloads: React Router can apply the restore saved before a
+ * reload late, once lazily loaded pages settle, and jump the page while it is being used.
+ */
+const SCROLL_STORAGE_KEY = 'devtrack-scroll-positions'
+try {
+  window.sessionStorage.removeItem(SCROLL_STORAGE_KEY)
+} catch {
+  // Storage can be unavailable (private mode); nothing was saved then either.
+}
+const scrollKey = (location: Location) => location.pathname
 
 function Breadcrumb() {
   const location = useLocation()
@@ -193,7 +207,7 @@ export function AppShell() {
       <TaskDetailSheet />
       <IssueDetailSheet />
       <ThemedToaster />
-      <ScrollRestoration getKey={(location) => location.pathname} />
+      <ScrollRestoration getKey={scrollKey} storageKey={SCROLL_STORAGE_KEY} />
     </div>
   )
 }
