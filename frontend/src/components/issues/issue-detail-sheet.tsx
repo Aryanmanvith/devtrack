@@ -98,6 +98,8 @@ function IssueDetail({ issue }: { issue: Issue }) {
           <RowsSkeleton rows={3} className="px-0" />
         ) : history.isError ? (
           <ErrorState compact error={history.error} onRetry={() => history.refetch()} />
+        ) : history.data.items.length === 0 ? (
+          <p className="text-[13px] text-subtle">No changes recorded yet.</p>
         ) : (
           <ul className="divide-y divide-border">
             {history.data.items.map((activity) => (
