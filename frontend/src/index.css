@@ -1,0 +1,249 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@fontsource-variable/mona-sans/standard.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * DevTrack design tokens.
+ * Surfaces step up in lightness (background → surface → surface-2 → raised); color is
+ * reserved for meaning: indigo for actions and focus, and muted hues for status, priority,
+ * issue type and project identity.
+ */
+:root {
+  color-scheme: light;
+  --background: #f3f4f6;
+  --surface: #ffffff;
+  --surface-2: #f6f6f8;
+  --raised: #ffffff;
+  --border: #e2e4e9;
+  --border-strong: #cdd0d8;
+  --foreground: #15161b;
+  --muted: #565a67;
+  --subtle: #6b6f7c;
+  --primary: #5450df;
+  --primary-hover: #4643cf;
+  --primary-foreground: #ffffff;
+  --primary-soft: #ecebfc;
+  --accent-text: #4642d4;
+  --violet: #7454e2;
+  --ring: #6461ea;
+  --danger: #b9304a;
+  --danger-soft: #fcecef;
+  --success: #12744d;
+  --warning: #8f5d09;
+  --grid: #eceef2;
+
+  --status-backlog: #686c79;
+  --status-todo: #2a6cab;
+  --status-in-progress: #8f5d09;
+  --status-in-review: #7454e2;
+  --status-done: #12744d;
+
+  --priority-urgent: #b9304a;
+  --priority-high: #a4520e;
+  --priority-medium: #4f6ea8;
+  --priority-low: #686c79;
+
+  --type-bug: #b9304a;
+  --type-feature: #5450df;
+  --type-improvement: #0e7168;
+  --type-question: #2a6cab;
+
+  --project-indigo: #5450df;
+  --project-violet: #7454e2;
+  --project-sky: #2f8acf;
+  --project-teal: #0e7168;
+  --project-emerald: #12744d;
+  --project-amber: #8f5d09;
+  --project-rose: #b9304a;
+  --project-slate: #6b6f7c;
+
+  --shadow-panel: 0 1px 2px rgb(16 17 22 / 0.04), 0 1px 1px rgb(16 17 22 / 0.02);
+  --shadow-pop: 0 12px 32px -8px rgb(16 17 22 / 0.18), 0 2px 6px rgb(16 17 22 / 0.06);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #17181c;
+  --surface: #1d1f24;
+  --surface-2: #23252b;
+  --raised: #272930;
+  --border: #2b2e36;
+  --border-strong: #3a3d47;
+  --foreground: #ecedf2;
+  --muted: #a6a9b6;
+  --subtle: #898d9b;
+  --primary: #6461ea;
+  --primary-hover: #716ef2;
+  --primary-foreground: #ffffff;
+  --primary-soft: rgb(109 106 246 / 0.16);
+  --accent-text: #a5a3fc;
+  --violet: #a98cf7;
+  --ring: #8d8bfa;
+  --danger: #f07185;
+  --danger-soft: rgb(240 113 133 / 0.12);
+  --success: #57c08f;
+  --warning: #e2b45c;
+  --grid: #272a31;
+
+  --status-backlog: #8a8f9e;
+  --status-todo: #6aa7ea;
+  --status-in-progress: #e2b45c;
+  --status-in-review: #a98cf7;
+  --status-done: #57c08f;
+
+  --priority-urgent: #f07185;
+  --priority-high: #f29b5e;
+  --priority-medium: #8fa3cf;
+  --priority-low: #8a8f9e;
+
+  --type-bug: #f07185;
+  --type-feature: #9896fb;
+  --type-improvement: #4fbdb0;
+  --type-question: #6aa7ea;
+
+  --project-indigo: #7d7bf8;
+  --project-violet: #a98cf7;
+  --project-sky: #5ab0ea;
+  --project-teal: #45b5a9;
+  --project-emerald: #57c08f;
+  --project-amber: #e0ae4f;
+  --project-rose: #ee6f86;
+  --project-slate: #8b90a0;
+
+  --shadow-panel: inset 0 1px 0 rgb(255 255 255 / 0.025);
+  --shadow-pop: 0 16px 40px -12px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.03);
+}
+
+@theme inline {
+  --font-sans:
+    'Mona Sans Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-raised: var(--raised);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent-text: var(--accent-text);
+  --color-violet: var(--violet);
+  --color-ring: var(--ring);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-grid: var(--grid);
+
+  --color-status-backlog: var(--status-backlog);
+  --color-status-todo: var(--status-todo);
+  --color-status-in-progress: var(--status-in-progress);
+  --color-status-in-review: var(--status-in-review);
+  --color-status-done: var(--status-done);
+  --color-priority-urgent: var(--priority-urgent);
+  --color-priority-high: var(--priority-high);
+  --color-priority-medium: var(--priority-medium);
+  --color-priority-low: var(--priority-low);
+  --color-type-bug: var(--type-bug);
+  --color-type-feature: var(--type-feature);
+  --color-type-improvement: var(--type-improvement);
+  --color-type-question: var(--type-question);
+  --color-project-indigo: var(--project-indigo);
+  --color-project-violet: var(--project-violet);
+  --color-project-sky: var(--project-sky);
+  --color-project-teal: var(--project-teal);
+  --color-project-emerald: var(--project-emerald);
+  --color-project-amber: var(--project-amber);
+  --color-project-rose: var(--project-rose);
+  --color-project-slate: var(--project-slate);
+
+  --shadow-panel: var(--shadow-panel);
+  --shadow-pop: var(--shadow-pop);
+}
+
+/* Expanded width of Mona Sans: titles and metrics read as the voice of the interface. */
+@utility font-display {
+  font-stretch: 118%;
+  letter-spacing: -0.012em;
+}
+
+@utility font-wide {
+  font-stretch: 108%;
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
+
+  html {
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--background);
+    color: var(--foreground);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 32%, transparent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  button,
+  [role='button'] {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  input[type='date']::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.7;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Recharts: keep focus outlines on the chart wrapper, not on individual SVG nodes. */
+.recharts-wrapper:focus,
+.recharts-surface:focus,
+.recharts-sector:focus,
+.recharts-rectangle:focus {
+  outline: none;
+}
