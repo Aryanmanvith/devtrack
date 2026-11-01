@@ -28,6 +28,10 @@ export const routes: RouteObject[] = [
     hydrateFallbackElement: <AppLoading />,
     children: [
       {
+        index: true,
+        lazy: () => import('@/pages/dashboard').then((m) => ({ Component: m.DashboardPage })),
+      },
+      {
         path: '*',
         lazy: () => import('@/pages/not-found').then((m) => ({ Component: m.NotFoundPage })),
       },
