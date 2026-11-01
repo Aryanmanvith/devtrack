@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { Task } from '@/lib/api/types'
 import { makeTask, page } from '@/test/fixtures'
@@ -50,6 +50,34 @@ describe('My Tasks', () => {
       expect(query?.getAll('status')).toEqual([])
       expect(query?.get('due')).toBeNull()
     })
+  })
+
+  it('keeps a filter removed while a search is still waiting to apply', async () => {
+    mockApi({ 'GET /api/tasks': page([makeTask({ title: 'Fix login bug' })]) })
+    const { user, router } = renderApp('/tasks?priority=high&due=overdue')
+    const chips = await screen.findByRole('group', { name: 'Results and active filters' })
+
+    // Typing starts the 300 ms search debounce; the chip is removed before it fires.
+    await user.type(screen.getByRole('searchbox', { name: 'Search tasks' }), 'login')
+    await user.click(within(chips).getByRole('button', { name: 'Remove filter Priority: High' }))
+
+    await waitFor(() => expect(currentSearch(router).get('q')).toBe('login'))
+    expect(currentSearch(router).get('priority')).toBeNull()
+    expect(currentSearch(router).get('due')).toBe('overdue')
+  })
+
+  it('shows a search changed from outside the field, even while it has focus', async () => {
+    mockApi({ 'GET /api/tasks': page([makeTask()]) })
+    const { user, router } = renderApp('/tasks')
+    const search = await screen.findByRole('searchbox', { name: 'Search tasks' })
+    await user.type(search, 'login')
+    await waitFor(() => expect(currentSearch(router).get('q')).toBe('login'))
+    expect(search).toHaveFocus()
+
+    await act(() => router.navigate('/tasks?q=report'))
+    await waitFor(() => expect(search).toHaveValue('report'))
+    await act(() => router.navigate('/tasks'))
+    await waitFor(() => expect(search).toHaveValue(''))
   })
 
   it('changes sorting through the sort control', async () => {

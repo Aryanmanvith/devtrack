@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { AppProviders } from '@/app/root-layout'
 import { routes } from '@/app/routes'
+import { RouterInstanceProvider } from '@/providers/router-instance'
 
 /** Render the real application (router, providers, shell and lazy pages) at a URL. */
 export function renderApp(path = '/') {
@@ -14,7 +15,9 @@ export function renderApp(path = '/') {
   const user = userEvent.setup()
   const view = render(
     <AppProviders queryClient={queryClient}>
-      <RouterProvider router={router} />
+      <RouterInstanceProvider router={router}>
+        <RouterProvider router={router} />
+      </RouterInstanceProvider>
     </AppProviders>,
   )
   return { ...view, user, router, queryClient }
