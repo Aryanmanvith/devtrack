@@ -1,0 +1,5 @@
+# Development and test tooling. Installs the runtime requirements too.
+-r requirements.txt
+pytest==9.2.0
+httpx==0.28.1
+ruff==0.17.3
