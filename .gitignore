@@ -1,0 +1,42 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# ---- Node / frontend ----
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+coverage/
+frontend/playwright-report/
+frontend/test-results/
+frontend/blob-report/
+
+# ---- Local data: SQLite databases are created at runtime ----
+backend/data/*
+!backend/data/.gitkeep
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite3
+
+# ---- Environment files (never commit secrets) ----
+.env
+.env.*
+!.env.example
+
+# ---- Editors and operating systems ----
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
