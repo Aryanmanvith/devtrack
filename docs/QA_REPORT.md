@@ -17,6 +17,7 @@ verified, it says so.
 | End-to-end browser tests (Playwright, Chromium) | 28 passed, 0 failed |
 | Static checks | Ruff, Ruff format, TypeScript (strict), ESLint, Prettier and actionlint report no problems |
 | Production build | `vite build` succeeds |
+| GitHub Actions CI | First run on GitHub passed all three jobs: backend, frontend and end-to-end ([run 41321125150](https://github.com/Aryanmanvith/devtrack/actions/runs/41321125150)) |
 | Defects in DevTrack found and fixed | 12 (listed below) |
 
 Every element in the inventory was used by an automated test that passed in the final run.
@@ -90,8 +91,16 @@ frontend$ npx playwright test g-controls -g "dashboard: summary" --repeat-each=2
                                                       2 passed (first test on a fresh server, where it used to fail)
 ```
 
-`.github/workflows/ci.yml` was checked with actionlint 1.7.12 (no errors). The workflow
-itself has not run on GitHub; see the limits below.
+`.github/workflows/ci.yml` was checked with actionlint 1.7.12 (no errors). Its first run on
+GitHub, started by pushing `main` (`8f48f9a`) to the repository, passed all three jobs on
+GitHub's Ubuntu runners
+([run 41321125150](https://github.com/Aryanmanvith/devtrack/actions/runs/41321125150)):
+
+```text
+Backend · lint and tests                       ruff clean; 68 passed in 6.24s
+Frontend · types, lint, unit tests and build   Test Files 5 passed (5), Tests 37 passed (37); build succeeded
+End-to-end · Playwright                        28 passed (6.7m), no retries
+```
 
 ## Defects found and fixed
 
@@ -481,8 +490,9 @@ every option (`test_filters_search_and_sorting`, `test_due_date_filters`,
   They use standard `py`, `pip`, `npm` and `uvicorn` invocations, and `package-lock.json`
   includes the Windows builds of the native packages (Rolldown, Tailwind's Oxide engine,
   LightningCSS).
-- **GitHub.** No GitHub repository, pull request or Actions run was created or checked from
-  this environment. The workflow passes actionlint, and every command in it was run locally.
+- **GitHub.** The repository is on GitHub and its CI workflow passes there. No pull request
+  has been opened or reviewed on GitHub yet: the feature branches were merged locally before
+  the repository was published.
 - **Browsers and devices.** Only Chromium was automated. Firefox, Safari, touch dragging on a
   phone or tablet, and real screen readers were not tested. Screen reader support (labels,
   live announcements during keyboard moves) is checked through the accessibility tree.
