@@ -32,6 +32,10 @@ export const routes: RouteObject[] = [
         lazy: () => import('@/pages/dashboard').then((m) => ({ Component: m.DashboardPage })),
       },
       {
+        path: 'tasks',
+        lazy: () => import('@/pages/tasks').then((m) => ({ Component: m.TasksPage })),
+      },
+      {
         path: 'projects',
         lazy: () => import('@/pages/projects').then((m) => ({ Component: m.ProjectsPage })),
       },
@@ -39,6 +43,10 @@ export const routes: RouteObject[] = [
         path: 'projects/:projectId',
         lazy: () =>
           import('@/pages/project-detail').then((m) => ({ Component: m.ProjectDetailPage })),
+      },
+      {
+        path: 'board',
+        lazy: () => import('@/pages/board').then((m) => ({ Component: m.BoardPage })),
       },
       {
         path: '*',
