@@ -347,6 +347,9 @@ export function KanbanBoard({
     <DndContext
       sensors={sensors}
       collisionDetection={closestCorners}
+      // The default zone (20% of the board's width) starts scrolling while the pointer is
+      // still over a visible column near the edge, so the card lands one column too far.
+      autoScroll={{ threshold: { x: 0.08, y: 0.15 } }}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
