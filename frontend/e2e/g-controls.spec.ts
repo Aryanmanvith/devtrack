@@ -128,9 +128,12 @@ test('dashboard: summary links, KPIs, trend controls, distribution and panel lin
     status: 'done',
   })
 
+  // Reload the dashboard and wait until every panel has its data, as a person would before
+  // reaching for a control at the bottom of the page.
   const back = async () => {
     await page.goto('/')
     await expect(page.getByRole('link', { name: /^Open tasks: \d+\./ })).toBeVisible()
+    await page.waitForLoadState('networkidle')
   }
   await back()
   const main = page.getByRole('main')
@@ -203,16 +206,18 @@ test('dashboard: summary links, KPIs, trend controls, distribution and panel lin
   await expect(page).toHaveURL(/\/tasks\?status=open&priority=urgent$/)
   await expect(taskList(page)).toContainText(late.title)
   await back()
+  // Hovering a ring segment shows its count and share. The ring is measured on every attempt
+  // because it animates in after the page loads.
   const distributionRegion = page.getByRole('region', { name: 'Task distribution' })
-  const ring = await distributionRegion.locator('.recharts-pie').boundingBox()
-  if (!ring) throw new Error('Donut chart not measurable')
-  const radius = (ring.width / 2) * 0.85
-  const centre = { x: ring.x + ring.width / 2, y: ring.y + ring.height / 2 }
   const sliceTip = distributionRegion
     .locator('.recharts-tooltip-wrapper')
     .getByText(/\d+ tasks? \(\d+%\)/)
   await expect
     .poll(async () => {
+      const ring = await distributionRegion.locator('.recharts-pie').boundingBox()
+      if (!ring) return false
+      const radius = (ring.width / 2) * 0.85
+      const centre = { x: ring.x + ring.width / 2, y: ring.y + ring.height / 2 }
       for (const [dx, dy] of [
         [radius, 0],
         [0, -radius],
