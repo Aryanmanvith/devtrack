@@ -28,6 +28,9 @@ export default defineConfig(({ mode }) => {
       include: ['src/**/*.test.{ts,tsx}'],
       css: false,
       restoreMocks: true,
+      unstubGlobals: true,
+      // Pages are lazy-loaded the same way as in the browser; allow time for the first import.
+      testTimeout: 15_000,
     },
   }
 })

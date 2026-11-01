@@ -1,4 +1,5 @@
 import {
+  closestCenter,
   closestCorners,
   DndContext,
   DragOverlay,
@@ -8,9 +9,11 @@ import {
   useSensor,
   useSensors,
   type Announcements,
+  type CollisionDetection,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
+  type KeyboardCoordinateGetter,
   type UniqueIdentifier,
 } from '@dnd-kit/core'
 import {
@@ -58,6 +61,60 @@ function groupByStatus(tasks: Task[]): Columns {
   for (const status of TASK_STATUS_ORDER)
     columns[status].sort((a, b) => a.position - b.position || a.id - b.id)
   return columns
+}
+
+/**
+ * Arrow keys for keyboard dragging. Left and Right move the card to the neighbouring status
+ * column, keeping its height on screen; Up and Down reorder it within the column.
+ * (dnd-kit's sortableKeyboardCoordinates is built for one list: across columns it often picks
+ * a target in the card's own column, so Left and Right did nothing.)
+ */
+const boardKeyboardCoordinates: KeyboardCoordinateGetter = (event, args) => {
+  const { collisionRect, droppableRects } = args.context
+  if ((event.code !== 'ArrowLeft' && event.code !== 'ArrowRight') || !collisionRect) {
+    return sortableKeyboardCoordinates(event, args)
+  }
+  event.preventDefault()
+  const centre = collisionRect.left + collisionRect.width / 2
+  const rects = TASK_STATUS_ORDER.map((status) => droppableRects.get(`${COLUMN_PREFIX}${status}`))
+  const current = rects.findIndex((rect) => rect && centre >= rect.left && centre <= rect.right)
+  const target = rects[current + (event.code === 'ArrowRight' ? 1 : -1)]
+  if (current < 0 || !target) return undefined
+  return {
+    x: target.left + (target.width - collisionRect.width) / 2,
+    y: collisionRect.top,
+  }
+}
+
+/**
+ * Decide the column first (the one under the pointer, or under the dragged card's centre when
+ * dragging with the keyboard), then the closest card inside it. Plain closestCorners compares
+ * corner distances, so a card low in one column could match a card in the next column.
+ */
+const boardCollisionDetection: CollisionDetection = (args) => {
+  const { collisionRect, droppableContainers, droppableRects, pointerCoordinates } = args
+  const x = pointerCoordinates?.x ?? collisionRect.left + collisionRect.width / 2
+  const inColumn = (left: number, right: number) => (id: UniqueIdentifier) => {
+    const rect = droppableRects.get(id)
+    return (
+      rect !== undefined &&
+      rect.left + rect.width / 2 >= left &&
+      rect.left + rect.width / 2 <= right
+    )
+  }
+  const column = droppableContainers.find((container) => {
+    const rect = droppableRects.get(container.id)
+    return (
+      String(container.id).startsWith(COLUMN_PREFIX) && rect && x >= rect.left && x <= rect.right
+    )
+  })
+  const columnRect = column ? droppableRects.get(column.id) : undefined
+  if (!column || !columnRect) return closestCorners(args)
+  const contains = inColumn(columnRect.left, columnRect.right)
+  return closestCenter({
+    ...args,
+    droppableContainers: droppableContainers.filter((container) => contains(container.id)),
+  })
 }
 
 function columnOf(id: UniqueIdentifier, columns: Columns): TaskStatus | null {
@@ -249,7 +306,7 @@ export function KanbanBoard({
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, { coordinateGetter: boardKeyboardCoordinates }),
   )
 
   const titleOf = (id: UniqueIdentifier) =>
@@ -346,7 +403,10 @@ export function KanbanBoard({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={boardCollisionDetection}
+      // The default zone (20% of the board's width) starts scrolling while the pointer is
+      // still over a visible column near the edge, so the card lands one column too far.
+      autoScroll={{ threshold: { x: 0.08, y: 0.15 } }}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}

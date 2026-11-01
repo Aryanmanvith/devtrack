@@ -5,8 +5,9 @@ import { cn } from '@/lib/utils'
 
 /**
  * Debounced search box. The input is uncontrolled so typing is never interrupted by URL
- * updates; when the value changes from outside (for example "Clear all"), the field is
- * updated unless the user is currently typing in it.
+ * updates. A new `value` that differs from the last search this field sent came from
+ * outside (Clear all, a link, the Back button): the field then shows it and drops any
+ * search still waiting to be sent.
  */
 export function SearchField({
   value,
@@ -25,18 +26,26 @@ export function SearchField({
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const timer = useRef<number | undefined>(undefined)
+  const lastSent = useRef(value)
 
   useEffect(() => {
     const input = inputRef.current
-    if (input && input.value !== value && document.activeElement !== input) input.value = value
+    if (!input || value === lastSent.current) return
+    window.clearTimeout(timer.current)
+    lastSent.current = value
+    input.value = value
   }, [value])
 
   useEffect(() => () => window.clearTimeout(timer.current), [])
 
   const emit = (next: string, immediate = false) => {
     window.clearTimeout(timer.current)
-    if (immediate) onChange(next.trim())
-    else timer.current = window.setTimeout(() => onChange(next.trim()), delay)
+    const send = () => {
+      lastSent.current = next.trim()
+      onChange(next.trim())
+    }
+    if (immediate) send()
+    else timer.current = window.setTimeout(send, delay)
   }
 
   return (
